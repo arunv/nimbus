@@ -46,9 +46,12 @@ const CGFloat NIPagingScrollViewDefaultPageMargin = 10;
   CGFloat _percentScrolledIntoFirstVisiblePage;
 }
 
+@synthesize scrollView = _scrollView;
+
 - (void)commonInit {
   // Default state.
   self.pageMargin = NIPagingScrollViewDefaultPageMargin;
+  self.pageInset = CGSizeZero;
   self.type = NIPagingScrollViewHorizontal;
 
   // Internal state
@@ -129,7 +132,7 @@ const CGFloat NIPagingScrollViewDefaultPageMargin = 10;
     pageFrame = CGRectInset(pageFrame, 0, self.pageMargin);
   }
 
-  return pageFrame;
+  return CGRectInset(pageFrame, self.pageInset.width, self.pageInset.height);
 }
 
 - (CGSize)contentSizeForPagingScrollView {
@@ -691,6 +694,11 @@ const CGFloat NIPagingScrollViewDefaultPageMargin = 10;
 
 - (void)setPageMargin:(CGFloat)pageMargin {
   _pageMargin = pageMargin;
+  [self setNeedsLayout];
+}
+
+- (void)setPageInset:(CGSize)pageInset {
+  _pageInset = pageInset;
   [self setNeedsLayout];
 }
 

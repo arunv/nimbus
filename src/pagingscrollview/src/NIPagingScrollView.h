@@ -50,6 +50,8 @@ typedef enum {
  */
 @interface NIPagingScrollView : UIView <UIScrollViewDelegate>
 
+@property (nonatomic, readonly) UIScrollView* scrollView;
+
 #pragma mark Data Source
 
 - (void)reloadData;
@@ -69,6 +71,7 @@ typedef enum {
 #pragma mark Configuring Presentation
 
 @property (nonatomic) CGFloat pageMargin;
+@property (nonatomic) CGSize pageInset;
 @property (nonatomic) NIPagingScrollViewType type; // Default: NIPagingScrollViewHorizontal
 
 #pragma mark Visible Pages
@@ -242,6 +245,14 @@ typedef enum {
  * By default this is NIPagingScrollViewDefaultPageMargin.
  *
  * @fn NIPagingScrollView::pageMargin
+ */
+
+/**
+ * Distance each page is inset from the paging scroll view.
+ *
+ * By default this is CGSizeZero.
+ *
+ * @fn NIPagingScrollView::pageInset
  */
 
 /**
