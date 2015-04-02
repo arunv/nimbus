@@ -94,6 +94,41 @@ CGSize NISizeOfAttributedStringConstrainedToSize(NSAttributedString* attributedS
   return CGSizeMake(NICGFloatCeil(newSize.width), NICGFloatCeil(newSize.height));
 }
 
+/**
+ * @internal
+ *
+ * The NIViewAccessibilityElement class encapsulates information about an item
+ * that should be accessible to users with disabilities, but isn't accessible
+ * by default and might be used in animations.
+ *
+ * Differences between UIAccessibilityElement and NIViewAccessibilityElement:
+ *
+ * - The accessibilityContainer must be a UIView.
+ * - The accessibilityFrame is recomputed every time from the frameInContainer
+ *   and the accessibilityContainer.
+ */
+@interface NIViewAccessibilityElement : UIAccessibilityElement
+
+// This frame is in the accessibilityContainer coordinates.
+@property (nonatomic) CGRect frameInContainer;
+
+@end
+
+@implementation NIViewAccessibilityElement
+
+- (instancetype)initWithAccessibilityContainer:(id)container {
+  NIDASSERT([container isKindOfClass:[UIView class]]);
+  return [super initWithAccessibilityContainer:container];
+}
+
+- (CGRect)accessibilityFrame {
+  UIView* view = [self accessibilityContainer];
+  CGRect frame = [view convertRect:self.frameInContainer toView:nil];
+  return [view.window convertRect:frame toWindow:nil];
+}
+
+@end
+
 @interface NIAttributedLabelImage : NSObject
 
 - (CGSize)boxSize; // imageSize + margins
@@ -127,7 +162,7 @@ CGSize NISizeOfAttributedStringConstrainedToSize(NSAttributedString* attributedS
 @property (assign)            BOOL detectingLinks; // Atomic.
 @property (nonatomic)         BOOL linksHaveBeenDetected;
 @property (nonatomic, copy)   NSArray*        detectedlinkLocations;
-@property (nonatomic, strong) NSMutableArray* explicitLinkLocations;
+@property (nonatomic, strong) NSMutableArray* explicitLinkLocations;  // Of NSTextCheckingResult.
 
 @property (nonatomic, strong) NSTextCheckingResult* originalLink;
 @property (nonatomic, strong) NSTextCheckingResult* touchedLink;
@@ -649,7 +684,7 @@ CGSize NISizeOfAttributedStringConstrainedToSize(NSAttributedString* attributedS
   [attributedString enumerateAttribute:NIAttributedLabelLinkAttributeName
                                inRange:NSMakeRange(0, attributedString.length)
                                options:0
-                            usingBlock:^(id value, NSRange range, BOOL *stop) {
+                            usingBlock:^(NSTextCheckingResult *value, NSRange range, BOOL *stop) {
                               if (value != nil) {
                                 [links addObject:value];
                               }
@@ -1400,9 +1435,9 @@ CGSize NISizeOfAttributedStringConstrainedToSize(NSAttributedString* attributedS
 
     NSString* label = [self.mutableAttributedString.string substringWithRange:result.range];
     for (NSValue* rectValue in rectsForLink) {
-      UIAccessibilityElement* element = [[UIAccessibilityElement alloc] initWithAccessibilityContainer:self];
+      NIViewAccessibilityElement* element = [[NIViewAccessibilityElement alloc] initWithAccessibilityContainer:self];
       element.accessibilityLabel = label;
-      element.accessibilityFrame = [self convertRect:rectValue.CGRectValue toView:self.window];
+      element.frameInContainer = rectValue.CGRectValue;
       element.accessibilityTraits = UIAccessibilityTraitLink;
       [accessibleElements addObject:element];
     }
@@ -1410,9 +1445,9 @@ CGSize NISizeOfAttributedStringConstrainedToSize(NSAttributedString* attributedS
 
   // Add this label's text as the "bottom-most" accessibility element, i.e. the last element in the
   // array. This gives link priorities.
-  UIAccessibilityElement* element = [[UIAccessibilityElement alloc] initWithAccessibilityContainer:self];
+  NIViewAccessibilityElement* element = [[NIViewAccessibilityElement alloc] initWithAccessibilityContainer:self];
   element.accessibilityLabel = self.attributedText.string;
-  element.accessibilityFrame = [self convertRect:self.bounds toView:self.window];
+  element.frameInContainer = self.bounds;
   element.accessibilityTraits = UIAccessibilityTraitNone;
   [accessibleElements addObject:element];
 
